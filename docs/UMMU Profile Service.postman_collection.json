@@ -1,0 +1,391 @@
+{
+  "info": {
+    "_postman_id": "6659d071-1a0c-472f-90a0-31cd167917f5",
+    "name": "UMMU Profile Service",
+    "description": "Postman collection for UMMU Profile Service. Use the Auth Service login request to obtain a profile-service audience token. API traffic goes through Kong; the Profile Service API port is not published to the host.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:7000",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "target_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "full_name",
+      "value": "Nama Pengguna",
+      "type": "string"
+    },
+    {
+      "key": "phone_number",
+      "value": "+628123456789",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth Service",
+      "description": "Login menggunakan akun Auth Service. Access token disimpan otomatis untuk request lain; token dari login service ini memiliki audience profile-service.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Isi username dan password dari Auth Service pada collection variables. Token hasil login disimpan ke variable access_token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login berhasil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Response berisi access token', function () {",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "if (body.data && body.data.access_token) {",
+                  "    pm.collectionVariables.set('access_token', body.data.access_token);",
+                  "    if (body.data.user && body.data.user.id) {",
+                  "        pm.collectionVariables.set('user_id', body.data.user.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Liveness endpoint publik; tidak memerlukan token.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/healthz",
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Periksa apakah Profile Service tersedia melalui Kong."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health check berhasil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "My Profile",
+      "description": "Endpoint /me selalu menggunakan user_id dari claim sub token, bukan dari request body.",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me",
+            "description": "Membuat profil awal secara idempotent jika profil belum tersedia."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profil sendiri berhasil diambil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Response berisi user_id dan nama profil', function () {",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.user_id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.data).to.have.property('full_name');",
+                  "});",
+                  "if (body.data && body.data.user_id) {",
+                  "    pm.collectionVariables.set('user_id', body.data.user_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Update my name and phone",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone_number\": \"{{phone_number}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/me",
+            "description": "Mengubah nama dan nomor telepon. Field alamat yang tidak dikirim tidak berubah."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profil berhasil diperbarui', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Replace my addresses",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addresses\": [\n    {\n      \"label\": \"home\",\n      \"address_line\": \"Jl. Contoh No. 10\",\n      \"city\": \"Ternate\",\n      \"province\": \"Maluku Utara\",\n      \"postal_code\": \"97711\",\n      \"country\": \"ID\",\n      \"is_primary\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/me",
+            "description": "Perhatian: addresses mengganti seluruh daftar alamat. Kirim [] untuk menghapus semua alamat."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Alamat berhasil diperbarui', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Upload my avatar",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/profiles/me/avatar",
+            "description": "Pilih file JPEG atau PNG pada field avatar. Object storage harus dikonfigurasi; tanpa storage endpoint mengembalikan 503."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Avatar berhasil diunggah', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Delete my avatar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/avatar",
+            "description": "Menghapus avatar sendiri. Aman dipanggil ulang jika avatar tidak ada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Avatar berhasil dihapus atau memang belum ada', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Profiles",
+      "description": "Gunakan user token dengan permission profile.admin:read atau profile.admin:update pada access context global. Isi target_user_id dengan UUID pengguna yang dituju.",
+      "item": [
+        {
+          "name": "Get profile by user ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}",
+            "description": "Memerlukan permission profile.admin:read pada access context global. Response admin hanya memuat user_id, nama, dan avatar; nomor telepon serta alamat tidak disertakan."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profil publik admin berhasil diambil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Update profile by user ID",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone_number\": \"{{phone_number}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}",
+            "description": "Memerlukan permission profile.admin:update pada access context global. Admin hanya dapat mengubah nama dan nomor telepon melalui endpoint ini."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profil berhasil diperbarui oleh admin', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}
