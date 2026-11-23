@@ -55,6 +55,76 @@
       "key": "phone_number",
       "value": "+628123456789",
       "type": "string"
+    },
+    {
+      "key": "nim",
+      "value": "20240001",
+      "type": "string"
+    },
+    {
+      "key": "study_program_id",
+      "value": "d51fb41b-7f86-4a1f-928f-13dca492601f",
+      "type": "string"
+    },
+    {
+      "key": "cohort_year",
+      "value": "2024",
+      "type": "string"
+    },
+    {
+      "key": "admission_type",
+      "value": "regular",
+      "type": "string"
+    },
+    {
+      "key": "academic_status",
+      "value": "active",
+      "type": "string"
+    },
+    {
+      "key": "nidn",
+      "value": "0123456789",
+      "type": "string"
+    },
+    {
+      "key": "nidk",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expertise",
+      "value": "Computer Science",
+      "type": "string"
+    },
+    {
+      "key": "academic_position",
+      "value": "assistant",
+      "type": "string"
+    },
+    {
+      "key": "employee_number",
+      "value": "EMP-001",
+      "type": "string"
+    },
+    {
+      "key": "employment_status",
+      "value": "active",
+      "type": "string"
+    },
+    {
+      "key": "position",
+      "value": "staff",
+      "type": "string"
+    },
+    {
+      "key": "organizational_unit_id",
+      "value": "bd2f91f3-987d-4c64-bc92-8f0b9855da0b",
+      "type": "string"
+    },
+    {
+      "key": "employment_start_date",
+      "value": "2024-01-15",
+      "type": "string"
     }
   ],
   "item": [
@@ -386,6 +456,273 @@
           "response": []
         }
       ]
-    }
+    },
+    {
+      "name": "My Professional Data",
+      "description": "Endpoint /me menggunakan user_id dari claim sub token. PUT melakukan upsert. Atur collection variables untuk nilai payload sebelum mengirim request.",
+      "item": [
+        {
+          "name": "Get my student",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/students",
+            "description": "Mengambil data mahasiswa sendiri; 404 bila belum terdaftar."
+          },
+          "response": []
+        },
+        {
+          "name": "Upsert my student",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"{{nim}}\",\n  \"study_program_id\": \"{{study_program_id}}\",\n  \"cohort_year\": {{cohort_year}},\n  \"admission_type\": \"{{admission_type}}\",\n  \"academic_status\": \"{{academic_status}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/me/students",
+            "description": "NIM dibatasi 20 karakter alfanumerik, underscore, atau hyphen. Study program harus UUID."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete my student",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/students",
+            "description": "Menghapus data mahasiswa sendiri."
+          },
+          "response": []
+        },
+        {
+          "name": "Get my lecturer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/lecturers",
+            "description": "Mengambil data dosen sendiri; 404 bila belum terdaftar."
+          },
+          "response": []
+        },
+        {
+          "name": "Upsert my lecturer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nidn\": \"{{nidn}}\",\n  \"nidk\": \"{{nidk}}\",\n  \"expertise\": \"{{expertise}}\",\n  \"academic_position\": \"{{academic_position}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/me/lecturers",
+            "description": "Isi NIDN atau NIDK (minimal salah satu). Kosongkan variable nidk bila tidak digunakan."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete my lecturer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/lecturers",
+            "description": "Menghapus data dosen sendiri."
+          },
+          "response": []
+        },
+        {
+          "name": "Get my employee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/employees",
+            "description": "Mengambil data pegawai sendiri; 404 bila belum terdaftar."
+          },
+          "response": []
+        },
+        {
+          "name": "Upsert my employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_number\": \"{{employee_number}}\",\n  \"employment_status\": \"{{employment_status}}\",\n  \"position\": \"{{position}}\",\n  \"organizational_unit_id\": \"{{organizational_unit_id}}\",\n  \"employment_start_date\": \"{{employment_start_date}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/profiles/me/employees",
+            "description": "Organizational unit harus UUID dan tanggal memakai format YYYY-MM-DD."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete my employee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/profiles/me/employees",
+            "description": "Menghapus data pegawai sendiri."
+          },
+          "response": []
+        }
+          ]
+        },
+        {
+          "name": "Admin Professional Data",
+          "description": "Request ini memerlukan profile.admin:read untuk GET dan profile.admin:update untuk PUT/DELETE pada access context global. PUT memerlukan target_user_id yang sudah memiliki profil.",
+          "item": [
+            {
+              "name": "Get student by user ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/students"
+              },
+              "response": []
+            },
+            {
+              "name": "Upsert student by user ID",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nim\": \"{{nim}}\",\n  \"study_program_id\": \"{{study_program_id}}\",\n  \"cohort_year\": {{cohort_year}},\n  \"admission_type\": \"{{admission_type}}\",\n  \"academic_status\": \"{{academic_status}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/students"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete student by user ID",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/students"
+              },
+              "response": []
+            },
+            {
+              "name": "Get lecturer by user ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/lecturers"
+              },
+              "response": []
+            },
+            {
+              "name": "Upsert lecturer by user ID",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nidn\": \"{{nidn}}\",\n  \"nidk\": \"{{nidk}}\",\n  \"expertise\": \"{{expertise}}\",\n  \"academic_position\": \"{{academic_position}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/lecturers"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete lecturer by user ID",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/lecturers"
+              },
+              "response": []
+            },
+            {
+              "name": "Get employee by user ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/employees"
+              },
+              "response": []
+            },
+            {
+              "name": "Upsert employee by user ID",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employee_number\": \"{{employee_number}}\",\n  \"employment_status\": \"{{employment_status}}\",\n  \"position\": \"{{position}}\",\n  \"organizational_unit_id\": \"{{organizational_unit_id}}\",\n  \"employment_start_date\": \"{{employment_start_date}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/employees"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete employee by user ID",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/v1/profiles/{{target_user_id}}/employees"
+              },
+              "response": []
+            }
+          ]
+        }
   ]
 }

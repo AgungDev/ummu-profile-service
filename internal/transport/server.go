@@ -54,6 +54,8 @@ func New(ctx context.Context, cfg *config.Config) (*Server, error) {
 	logger := slog.Default().With("service", cfg.AppName, "version", cfg.AppVersion)
 	repository := repositories.NewProfileRepository(db)
 	profileUsecase := usecases.NewProfileUsecase(repository, avatarStore, cfg.Avatar, logger)
+	professionalRepository := repositories.NewProfessionalRepository(db)
+	professionalUsecase := usecases.NewProfessionalUsecase(repository, professionalRepository)
 
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -66,6 +68,7 @@ func New(ctx context.Context, cfg *config.Config) (*Server, error) {
 		}
 	}
 	profilehttp.NewProfileController(profileUsecase, authenticator, cfg.Avatar, logger).Register(router)
+	profilehttp.NewProfessionalController(professionalUsecase, authenticator, logger).Register(router)
 
 	return &Server{
 		httpServer: &http.Server{

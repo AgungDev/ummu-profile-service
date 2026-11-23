@@ -1,9 +1,9 @@
 # UMMU Profile Service
 
-Profile Service menyimpan atribut profil umum pengguna: nama lengkap, nomor
-telepon, alamat, dan referensi avatar. Service ini **tidak** menyimpan email
-login, password, identitas OIDC, NIM/status mahasiswa, NIDN/data dosen, data
-kepegawaian, role, atau permission.
+Profile Service menyimpan identitas personal utama pengguna (nama lengkap,
+nomor telepon, alamat, dan referensi avatar) serta data profesional mahasiswa,
+dosen, dan pegawai. Email login, password, identitas OIDC, role, dan permission
+tetap dimiliki Auth/Authorization Service.
 
 Stack: Go, Gin, GORM, PostgreSQL, dan `github.com/AgungDev/ummu-go-auth`.
 
@@ -86,6 +86,21 @@ memerlukan token dengan permission yang sesuai.
 | `GET` | `/api/v1/profiles/avatars/{key}` | Publik, hanya file avatar JPEG/PNG pada mode filesystem lokal |
 | `POST` | `/api/v1/profiles/me/avatar` | Login; multipart field `avatar` |
 | `DELETE` | `/api/v1/profiles/me/avatar` | Login |
+| `GET` | `/api/v1/profiles/me/students` | Login; data mahasiswa sendiri |
+| `PUT` | `/api/v1/profiles/me/students` | Login; membuat/mengganti data mahasiswa sendiri |
+| `DELETE` | `/api/v1/profiles/me/students` | Login; menghapus data mahasiswa sendiri |
+| `GET` | `/api/v1/profiles/me/lecturers` | Login; data dosen sendiri |
+| `PUT` | `/api/v1/profiles/me/lecturers` | Login; membuat/mengganti data dosen sendiri |
+| `DELETE` | `/api/v1/profiles/me/lecturers` | Login; menghapus data dosen sendiri |
+| `GET` | `/api/v1/profiles/me/employees` | Login; data pegawai sendiri |
+| `PUT` | `/api/v1/profiles/me/employees` | Login; membuat/mengganti data pegawai sendiri |
+| `DELETE` | `/api/v1/profiles/me/employees` | Login; menghapus data pegawai sendiri |
+| `GET` | `/api/v1/profiles/{user_id}/students` | Permission `profile.admin:read` |
+| `PUT`, `DELETE` | `/api/v1/profiles/{user_id}/students` | Permission `profile.admin:update` |
+| `GET` | `/api/v1/profiles/{user_id}/lecturers` | Permission `profile.admin:read` |
+| `PUT`, `DELETE` | `/api/v1/profiles/{user_id}/lecturers` | Permission `profile.admin:update` |
+| `GET` | `/api/v1/profiles/{user_id}/employees` | Permission `profile.admin:read` |
+| `PUT`, `DELETE` | `/api/v1/profiles/{user_id}/employees` | Permission `profile.admin:update` |
 | `GET` | `/healthz` | Publik, liveness sederhana |
 
 ### Melihat profil sendiri
@@ -143,19 +158,79 @@ yang diterima; ukuran dibatasi konfigurasi. Storage object memakai key
 acak ber-prefiks user UUID. Penghapusan avatar idempotent dan file lama dibuang
 setelah perubahan database berhasil.
 
+### Data profesional
+
+Data personal tetap berada pada satu baris `user_profiles` untuk setiap
+`user_id`. Tabel `students`, `lecturers`, dan `employees` masing-masing
+mereferensikan `user_profiles.user_id`, sehingga satu profil dapat sekaligus
+memiliki ketiga jenis data profesional. Setiap jenis maksimal satu baris per
+profil; ID baris dan ID relasi menggunakan UUID. `study_program_id` dan
+`organizational_unit_id` adalah UUID referensi lintas-service dan sengaja tidak
+memiliki foreign key.
+
+Endpoint data profesional memakai bearer JWT yang sama. Endpoint `/me`
+mengambil pemilik dari claim `sub`; endpoint untuk pengguna lain memakai
+permission global admin yang sama dengan endpoint profil. `PUT` bersifat
+upsert per profil, sedangkan `DELETE` menghapus hanya jenis data yang diminta.
+Nilai `nidn` dan `nidk` dapat dikirim salah satu atau keduanya, tetapi minimal
+satu wajib terisi. Field status dan jenis admisi menerima string non-kosong
+(maksimal 32 karakter), tanpa membatasi katalog nilai yang dikelola service
+lain.
+
+Contoh `PUT /api/v1/profiles/me/students`:
+
+```json
+{
+  "nim": "20240001",
+  "study_program_id": "d51fb41b-7f86-4a1f-928f-13dca492601f",
+  "cohort_year": 2024,
+  "admission_type": "regular",
+  "academic_status": "active"
+}
+```
+
+`PUT /api/v1/profiles/me/lecturers` menerima `nidn`, `nidk`, `expertise`, dan
+`academic_position`:
+
+```json
+{
+  "nidn": "0123456789",
+  "nidk": null,
+  "expertise": "Computer Science",
+  "academic_position": "assistant"
+}
+```
+
+`PUT /api/v1/profiles/me/employees` menerima `employee_number`,
+`employment_status`, `position`, `organizational_unit_id`, dan
+`employment_start_date` dengan format `YYYY-MM-DD`:
+
+```json
+{
+  "employee_number": "EMP-001",
+  "employment_status": "active",
+  "position": "staff",
+  "organizational_unit_id": "bd2f91f3-987d-4c64-bc92-8f0b9855da0b",
+  "employment_start_date": "2024-01-15"
+}
+```
+
+NIM, NIDN, NIDK, dan nomor pegawai unik di seluruh tabel sejenis; duplikasi
+menghasilkan HTTP `409`.
+
 ## Kepemilikan dan provisioning
 
 | Data | Pemilik |
 |---|---|
 | User ID, email login, password, OIDC | Auth Service |
-| Nama, nomor telepon, alamat, avatar key | Profile Service |
-| NIM dan status mahasiswa | Student Service |
-| NIDN dan data dosen | Lecturer Service |
-| Data kepegawaian | HR Service |
+| Nama, nomor telepon, alamat, avatar key, dan profil profesional | Profile Service |
+| Detail akademik selain atribut identitas profesional | Student/Lecturer Service |
+| Data organisasi selain atribut identitas pegawai | HR Service |
 | Role dan permission | Authorization Service |
 
-Profile Service hanya memakai `sub` untuk referensi identitas dan tidak
-menduplikasi profil akademik. `GET /me` adalah provisioning awal idempotent.
+Profile Service menggunakan `sub` sebagai `user_id` relasi, tidak menyimpan
+email/password, dan memiliki satu profil personal utama untuk setiap pengguna.
+`GET /me` adalah provisioning awal idempotent.
 Auth Service tidak lagi menyimpan atau mengembalikan `full_name`. Nama dari
 database Auth lama dipindahkan menggunakan importer satu kali yang dijelaskan
 di [`auth-service/docs/PROFILE_SERVICE_MIGRATION.md`](../auth-service/docs/PROFILE_SERVICE_MIGRATION.md).
@@ -166,9 +241,9 @@ outbox tetap dapat ditambahkan kemudian.
 ## Database dan migration
 
 Migration SQL tertanam ke binary dan dijalankan saat startup secara berurutan.
-Tabel `schema_migrations` melacak migration yang berhasil. Schema awal membuat
-`user_profiles` dan `user_addresses`; keduanya tidak memiliki foreign key ke
-database Auth Service karena service memiliki database sendiri.
+Tabel `schema_migrations` melacak migration yang berhasil. Migration awal
+membuat `user_profiles` dan `user_addresses`; migration berikutnya membuat
+tabel profesional dengan FK hanya ke `user_profiles` dalam database ini.
 
 ## Pengembangan lokal
 
